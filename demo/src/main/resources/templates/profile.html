@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Мой профиль | Книжный клуб</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+        .book-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            height: 100%;
+            cursor: pointer;
+            border: 1px solid rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .book-card .card-title {
+            font-size: 0.82rem;
+            margin-bottom: 0.5rem;
+        }
+        .book-card .card-text {
+            font-size: 0.75rem;
+        }
+        .book-card .status-badge {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.5rem;
+        }
+        .status-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1;
+        }
+        .nav-pills .nav-link.active {
+            background-color: #6c757d;
+        }
+        .profile-stats {
+            background: linear-gradient(to right, #f8f9fa, #e9ecef);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+        }
+        .stat-item h5 {
+            margin: 0;
+            font-weight: 600;
+        }
+        .stat-item small {
+            color: #6c757d;
+        }
+        .avatar-container {
+            position: relative;
+            display: inline-block;
+        }
+        .avatar-container .edit-avatar {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: rgba(255,255,255,0.9);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .avatar-container .edit-avatar:hover {
+            background: #fff;
+            transform: scale(1.1);
+        }
+        .genre-progress {
+            height: 6px;
+            border-radius: 3px;
+            margin-top: 5px;
+        }
+        .activity-item {
+            padding: 15px;
+            border-left: 3px solid #6c757d;
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+            border-radius: 0 5px 5px 0;
+        }
+        .friend-card {
+            transition: all 0.2s;
+        }
+        .friend-card:hover {
+            transform: translateX(5px);
+            background-color: #f8f9fa;
+        }
+        .rating-stars {
+            color: #ffc107;
+            font-size: 0.8rem;
+            line-height: 1;
+        }
+        .rating-stars i {
+            margin-right: 1px;
+        }
+        .rating-stars .text-muted {
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+  <!-- Подключаем header с параметром activeTab -->
+  <div th:replace="~{fragments/header :: header('profile')}"></div>
+
+  <div class="container mt-4">
+    <div class="row">
+      <!-- Левая колонка -->
+      <div class="col-md-4">
+        <!-- Профиль -->
+        <div class="card mb-4">
+          <div class="card-body text-center">
+            <div class="avatar-container mb-3">
+              <img th:src="${user.getAvatarUrl()}"
+                   class="rounded-circle"
+                   style="width: 150px; height: 150px; object-fit: cover;"
+                   alt="Аватар">
+              <button class="edit-avatar btn btn-light p-0"
+                      data-bs-toggle="modal"
+                      data-bs-target="#avatarModal">
+                <i class="bi bi-camera"></i>
+              </button>
+            </div>
+
+            <h4 class="mb-0" th:text="${user.username}">Имя пользователя</h4>
+            <p class="text-muted small mb-3">
+              Участник с <span th:text="${user.createdAt != null ? #temporals.format(user.createdAt, 'dd.MM.yyyy') : 'Н/Д'}">01.01.2023</span>
+            </p>
+
+
+
+            <!-- Сообщения об успехе/ошибке -->
+            <div th:if="${message}" class="alert alert-success alert-dismissible fade show py-2 small" role="alert">
+              <span th:text="${message}"></span>
+              <button type="button" class="btn-close small" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show py-2 small" role="alert">
+              <span th:text="${error}"></span>
+              <button type="button" class="btn-close small" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Статистика -->
+            <div class="profile-stats">
+              <div class="row g-0">
+                <div class="col-4">
+                  <div class="stat-item">
+                    <h5 th:text="${stats.totalBooks}">0</h5>
+                    <small>Всего книг</small>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="stat-item">
+                    <h5 th:text="${stats.friendsCount}">0</h5>
+                    <small>Друзей</small>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="stat-item">
+                    <h5 th:text="${stats.commentsCount}">0</h5>
+                    <small>Отзывов</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Кнопка редактирования профиля -->
+            <div>
+              <a th:href="@{/profile/edit}" class="btn btn-outline-secondary btn-sm w-100">
+                <i class="bi bi-pencil-square me-1"></i> Редактировать профиль
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Статистика книг -->
+        <div class="card mb-4">
+          <div class="card-header d-flex align-items-center">
+            <i class="bi bi-bar-chart-line me-2"></i>
+            <span class="flex-grow-1">Статистика чтения</span>
+          </div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+
+              <span>В планах</span>
+              <span class="badge bg-warning" th:text="${stats.plannedBooks}">0</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span>Читаю</span>
+              <span class="badge bg-info" th:text="${stats.readingBooks}">0</span>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span>Прочитано</span>
+              <span class="badge bg-success" th:text="${stats.booksRead}">0</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <span>Брошено</span>
+              <span class="badge bg-danger" th:text="${stats.droppedBooks}">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Любимые жанры -->
+        <div class="card mb-4">
+          <div class="card-header d-flex align-items-center">
+            <i class="bi bi-bookmark-heart me-2"></i>
+            <span class="flex-grow-1">Любимые жанры</span>
+          </div>
+          <div class="card-body">
+            <div th:if="${stats.topGenres.empty}" class="text-center text-muted py-3">
+              <i class="bi bi-bookmark-x mb-2 d-block"></i>
+              <small>Нет прочитанных книг</small>
+            </div>
+            <div th:each="genre : ${stats.topGenres}" class="mb-3">
+              <div class="d-flex justify-content-between align-items-center small">
+                <span th:text="${genre.key}">Жанр</span>
+                <span class="text-muted" th:text="${genre.value}">5</span>
+              </div>
+              <div class="progress genre-progress">
+                <div class="progress-bar" role="progressbar"
+                     th:style="'width: ' + ${genre.value / stats.maxGenreCount * 100} + '%'"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Правая колонка -->
+      <div class="col-md-8">
+        <!-- Навигация -->
+        <ul class="nav nav-pills mb-4" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="pill"
+                    data-bs-target="#books" type="button" role="tab">
+              <i class="bi bi-book me-1"></i>Книги
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="pill"
+                    data-bs-target="#favorites" type="button" role="tab">
+              <i class="bi bi-star me-1"></i>Избранное
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="pill"
+                    data-bs-target="#quotes" type="button" role="tab">
+              <i class="bi bi-quote me-1"></i>Мои цитаты
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="pill"
+                    data-bs-target="#friends" type="button" role="tab">
+              <i class="bi bi-people me-1"></i>Друзья
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="pill"
+                    data-bs-target="#statistics" type="button" role="tab">
+              <i class="bi bi-graph-up me-1"></i>Статистика
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+          <!-- Вкладка "Книги" -->
+          <div class="tab-pane fade show active" id="books" role="tabpanel">
+            <!-- Фильтры -->
+            <ul class="nav nav-tabs mb-4">
+              <li class="nav-item">
+                <a class="nav-link" th:classappend="${status == null} ? 'active'" th:href="@{/profile}">
+                  Все (<span th:text="${stats.totalBooks}">0</span>)
+                </a>
+              </li>
+              <li class="nav-item" th:each="readingStatus : ${T(com.example.demo.models.ReadingStatus).values()}">
+                <a class="nav-link"
+                   th:classappend="${status != null && status == readingStatus.name()} ? 'active'"
+                   th:href="@{/profile(status=${readingStatus.name()})}">
+                  <span th:text="${readingStatus.getDisplayName()}"></span>
+                  (<span th:text="${readingStatus.name() == 'FINISHED' ? stats.booksRead :
+                                  readingStatus.name() == 'READING' ? stats.readingBooks :
+                                  readingStatus.name() == 'WANT_TO_READ' ? stats.plannedBooks :
+                                  readingStatus.name() == 'DROPPED' ? stats.droppedBooks : 0}">0</span>)
+                </a>
+              </li>
+            </ul>
+
+            <!-- Сообщение если книг нет -->
+            <div th:if="${userBooks.empty}" class="text-center text-muted py-5">
+              <i class="bi bi-book display-4 d-block mb-3"></i>
+              <p th:if="${status != null}">В этом списке пока нет книг</p>
+              <p th:unless="${status != null}">Вы пока не добавили ни одной книги</p>
+              <a href="/books" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>Добавить книгу
+              </a>
+            </div>
+
+            <!-- Список книг -->
+            <div class="row g-4">
+              <div th:each="userBook : ${userBooks}" class="col-md-4 col-lg-2">
+                <div class="card h-100 book-card">
+                  <img th:src="${userBook.book.coverUrl != null && !userBook.book.coverUrl.isEmpty() ? '/images/covers/' + userBook.book.coverUrl : '/images/default-book-cover.svg'}"
+                       class="card-img-top" alt="Обложка книги"
+                       style="height: 200px; object-fit: cover;">
+                  <div class="card-body d-flex flex-column">
+                    <span class="badge status-badge"
+                          th:classappend="${'bg-' + (userBook.status != null ?
+                                        (userBook.status.name() == 'FINISHED' ? 'success' :
+                                         userBook.status.name() == 'READING' ? 'info' :
+                                         userBook.status.name() == 'WANT_TO_READ' ? 'warning' : 'danger') : 'secondary')}"
+                          th:text="${userBook.status != null ? userBook.status.getDisplayName() : 'Статус не указан'}">
+                    </span>
+
+                    <h5 class="card-title">
+                      <a th:href="@{'/books/book/' + ${userBook.book.id}}"
+                         th:text="${userBook.book.title}"
+                         class="text-decoration-none">
+                        Название книги
+                      </a>
+                    </h5>
+                    <p class="card-text text-muted" th:text="${userBook.book.author}">Автор</p>
+
+                    <!-- Оценка пользователя -->
+                    <div class="mt-auto">
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="rating-stars">
+                          <th:block th:if="${userBook.rating != null}">
+                            <th:block th:if="${userBook.rating!=10}">
+                              <i class="bi bi-star-fill text-warning"
+                                 th:each="i : ${#numbers.sequence(1, userBook.rating)}"></i>
+                              <i class="bi bi-star text-warning"
+                                 th:each="i : ${#numbers.sequence(userBook.rating + 1, 10)}"></i>
+                              <span class="ms-2 text-muted" th:text="${userBook.rating + '/10'}">0/10</span>
+                            </th:block>
+                            <th:block th:if="${userBook.rating==10}">
+                              <i class="bi bi-star-fill text-warning"
+                                 th:each="i : ${#numbers.sequence(1, userBook.rating)}"></i>
+                              <span class="ms-2 text-muted" th:text="${userBook.rating + '/10'}">0/10</span>
+                            </th:block>
+                          </th:block>
+                          <span th:unless="${userBook.rating != null}" class="text-muted small">
+                            <i class="bi bi-star me-1"></i>Нет оценки
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Вкладка "Избранное" -->
+          <div class="tab-pane fade" id="favorites" role="tabpanel">
+            <div th:if="${favoriteBooks.empty}" class="text-center text-muted py-4">
+              <i class="bi bi-star display-4 d-block mb-3"></i>
+              <p>У вас пока нет избранных книг</p>
+              <p class="small">Добавляйте понравившиеся книги в избранное!</p>
+            </div>
+
+            <!-- Список избранных книг -->
+            <div class="row g-4">
+              <div th:each="userBook : ${favoriteBooks}" class="col-md-4 col-lg-2">
+                <div class="card h-100 book-card">
+                  <img th:src="${userBook.book.coverUrl != null && !userBook.book.coverUrl.isEmpty() ? '/images/covers/' + userBook.book.coverUrl : '/images/default-book-cover.svg'}"
+                       class="card-img-top" alt="Обложка книги"
+                       style="height: 200px; object-fit: cover;">
+                  <div class="card-body d-flex flex-column">
+                    <span class="badge status-badge"
+                          th:classappend="${'bg-' + (userBook.status != null ?
+                                        (userBook.status.name() == 'FINISHED' ? 'success' :
+                                         userBook.status.name() == 'READING' ? 'info' :
+                                         userBook.status.name() == 'WANT_TO_READ' ? 'warning' : 'danger') : 'secondary')}"
+                          th:text="${userBook.status != null ? userBook.status.getDisplayName() : 'Статус не указан'}">
+                    </span>
+
+                    <h5 class="card-title">
+                      <a th:href="@{'/books/book/' + ${userBook.book.id}}"
+                         th:text="${userBook.book.title}"
+                         class="text-decoration-none">
+                        Название книги
+                      </a>
+                    </h5>
+                    <p class="card-text text-muted" th:text="${userBook.book.author}">Автор</p>
+
+                    <!-- Оценка пользователя -->
+                    <div class="mt-auto">
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="rating-stars">
+                          <th:block th:if="${userBook.rating != null}">
+                            <th:block th:if="${userBook.rating!=10}">
+                              <i class="bi bi-star-fill text-warning"
+                                 th:each="i : ${#numbers.sequence(1, userBook.rating)}"></i>
+                              <i class="bi bi-star text-warning"
+                                 th:each="i : ${#numbers.sequence(userBook.rating + 1, 10)}"></i>
+                              <span class="ms-2 text-muted" th:text="${userBook.rating + '/10'}">0/10</span>
+                            </th:block>
+                            <th:block th:if="${userBook.rating==10}">
+                              <i class="bi bi-star-fill text-warning"
+                                 th:each="i : ${#numbers.sequence(1, userBook.rating)}"></i>
+                              <span class="ms-2 text-muted" th:text="${userBook.rating + '/10'}">0/10</span>
+                            </th:block>
+                          </th:block>
+                          <span th:unless="${userBook.rating != null}" class="text-muted small">
+                            <i class="bi bi-star me-1"></i>Нет оценки
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Вкладка "Цитаты" -->
+          <div class="tab-pane fade" id="quotes" role="tabpanel">
+            <div class="row">
+              <div class="col-12">
+                <!-- Сообщение если цитат нет -->
+                <div th:if="${userQuotes.empty}" class="text-center text-muted py-5">
+                  <i class="bi bi-quote display-4 d-block mb-3"></i>
+                  <p>У вас пока нет сохраненных цитат</p>
+                  <p class="small">Добавляйте цитаты из книг, которые вы читаете!</p>
+                </div>
+
+                <!-- Список цитат -->
+                <div th:each="quote : ${userQuotes}" class="card mb-3">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <div>
+                        <a th:href="@{'/books/book/' + ${quote.book.id}}"
+                           class="text-decoration-none">
+                          <h5 class="mb-1" th:text="${quote.book.title}">Название книги</h5>
+                        </a>
+                        <small class="text-muted"
+                               th:text="${#temporals.format(quote.createdAt, 'dd.MM.yyyy HH:mm')}">
+                          01.01.2025
+                        </small>
+                      </div>
+                    </div>
+                    <blockquote class="blockquote mb-2">
+                      <p class="mb-0" th:text="${quote.text}">Текст цитаты</p>
+                    </blockquote>
+                    <div class="text-muted small">
+                      <span th:if="${quote.chapter}" class="me-3">
+                        <i class="bi bi-bookmark me-1"></i>
+                        <span th:text="${quote.chapter}">Глава 1</span>
+                      </span>
+                      <span th:if="${quote.page}">
+                        <i class="bi bi-file-text me-1"></i>
+                        стр. <span th:text="${quote.page}">42</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Вкладка "Друзья" -->
+          <div class="tab-pane fade" id="friends" role="tabpanel">
+            <!-- Входящие запросы -->
+            <div class="card mb-4" th:if="${!pendingRequests.empty}">
+              <div class="card-header d-flex align-items-center">
+                <i class="bi bi-envelope me-2"></i>
+                <span class="flex-grow-1">Входящие запросы</span>
+                <span class="badge bg-primary" th:text="${pendingRequests.size()}">0</span>
+              </div>
+              <div class="card-body">
+                <div th:each="request : ${pendingRequests}"
+                     class="d-flex align-items-center mb-3 p-2 rounded friend-card">
+                  <img th:src="${request.requester.getAvatarUrl()}"
+                       class="rounded-circle me-3"
+                       style="width: 50px; height: 50px; object-fit: cover;"
+                       alt="Аватар">
+                  <div class="flex-grow-1">
+                    <h6 class="mb-1">
+                      <a th:href="@{'/user/' + ${request.requester.username}}"
+                         th:text="${request.requester.username}"
+                         class="text-decoration-none">
+                        Имя пользователя
+                      </a>
+                    </h6>
+                    <small class="text-muted"
+                           th:text="${'Запрос отправлен: ' + #temporals.format(request.createdAt, 'dd.MM.yyyy')}">
+                    </small>
+                  </div>
+                  <div class="d-flex gap-2">
+                    <form th:action="@{/friends/accept}" method="post">
+                      <input type="hidden" name="friendshipId" th:value="${request.id}">
+                      <button type="submit" class="btn btn-sm btn-success">
+                        <i class="bi bi-check-lg"></i>
+                      </button>
+                    </form>
+                    <form th:action="@{/friends/reject}" method="post">
+                      <input type="hidden" name="friendshipId" th:value="${request.id}">
+                      <button type="submit" class="btn btn-sm btn-danger">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Добавить друга -->
+            <div class="card mb-4">
+              <div class="card-header d-flex align-items-center">
+                <i class="bi bi-person-plus me-2"></i>
+                <span class="flex-grow-1">Добавить друга</span>
+              </div>
+              <div class="card-body">
+                <form th:action="@{/friends/add}" method="post">
+                  <div class="input-group">
+                    <input type="text"
+                           name="username"
+                           class="form-control"
+                           placeholder="Введите имя пользователя"
+                           required>
+                    <button type="submit" class="btn btn-primary">
+                      <i class="bi bi-person-plus me-1"></i>Добавить
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Список друзей -->
+            <div class="card">
+              <div class="card-header d-flex align-items-center">
+                <i class="bi bi-people me-2"></i>
+                <span class="flex-grow-1">Мои друзья</span>
+                <span class="badge bg-secondary" th:text="${stats.friendsCount}">0</span>
+              </div>
+              <div class="card-body">
+                <div th:if="${friends.empty}" class="text-center text-muted py-4">
+                  <i class="bi bi-people display-4 d-block mb-3"></i>
+                  <p>У вас пока нет друзей</p>
+                </div>
+                <div th:each="friend : ${friends}"
+                     class="d-flex align-items-center mb-3 p-2 rounded friend-card">
+                  <img th:src="${friend.getAvatarUrl()}"
+                       class="rounded-circle me-3"
+                       style="width: 50px; height: 50px; object-fit: cover;"
+                       alt="Аватар">
+                  <div class="flex-grow-1">
+                    <h6 class="mb-1">
+                      <a th:href="@{'/user/' + ${friend.username}}"
+                         th:text="${friend.username}"
+                         class="text-decoration-none">
+                        Имя друга
+                      </a>
+                    </h6>
+                    <small class="text-muted">
+                      <i class="bi bi-book me-1"></i>
+                      <span th:text="${friend.userBooks.size()}">0</span> книг
+                    </small>
+                  </div>
+                  <form th:action="@{/friends/remove}" method="post">
+                    <input type="hidden" name="username" th:value="${friend.username}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                      <i class="bi bi-person-x"></i>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Вкладка "Статистика" -->
+          <div class="tab-pane fade" id="statistics" role="tabpanel">
+            <!-- Выбор периода -->
+            <div class="card mb-4">
+              <div class="card-body">
+                <div class="row align-items-center">
+                  <div class="col-md-4">
+                    <label for="periodType" class="form-label">Тип периода:</label>
+                    <select class="form-select mb-3" id="periodType">
+                      <option value="month">Месяц</option>
+                      <option value="year">Год</option>
+                      <option value="all">Все время</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4" id="monthSelector" style="display: none;">
+                    <label for="monthSelect" class="form-label">Выберите месяц:</label>
+                    <input type="month" class="form-control" id="monthSelect">
+                  </div>
+                  <div class="col-md-4" id="yearSelector" style="display: none;">
+                    <label for="yearSelect" class="form-label">Выберите год:</label>
+                    <select class="form-select" id="yearSelect">
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                  <div class="card-header">
+                    <h5 class="card-title mb-0">Прочитанные книги</h5>
+                  </div>
+                  <div class="card-body">
+                    <canvas id="readChart"></canvas>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                  <div class="card-header">
+                    <h5 class="card-title mb-0">Статистика по жанрам</h5>
+                  </div>
+                  <div class="card-body">
+                    <canvas id="genreChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно загрузки аватара -->
+  <div class="modal fade" id="avatarModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Загрузить новый аватар</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form th:action="@{/profile/upload-avatar}" method="post" enctype="multipart/form-data">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="avatarFile" class="form-label">Выберите изображение</label>
+              <input type="file" class="form-control" id="avatarFile" name="avatar" accept="image/*" required>
+            </div>
+            <div class="form-text">Рекомендуемый размер: 150x150 пикселей</div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+            <button type="submit" class="btn btn-primary">Загрузить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script th:inline="javascript">
+  document.addEventListener('DOMContentLoaded', function() {
+      // Получаем имя пользователя из модели
+      const username = /*[[${user.username}]]*/ 'username';
+      let readChart = null;
+      let genreChart = null;
+
+      // Инициализация селектора годов
+      const yearSelect = document.getElementById('yearSelect');
+      const currentYear = new Date().getFullYear();
+      for (let year = currentYear; year >= currentYear - 5; year--) {
+          const option = document.createElement('option');
+          option.value = year;
+          option.textContent = year;
+          yearSelect.appendChild(option);
+      }
+
+      // Обработчик изменения типа периода
+      document.getElementById('periodType').addEventListener('change', function() {
+          const monthSelector = document.getElementById('monthSelector');
+          const yearSelector = document.getElementById('yearSelector');
+
+          if (this.value === 'month') {
+              monthSelector.style.display = 'block';
+              yearSelector.style.display = 'none';
+          } else if (this.value === 'year') {
+              monthSelector.style.display = 'none';
+              yearSelector.style.display = 'block';
+          } else {
+              monthSelector.style.display = 'none';
+              yearSelector.style.display = 'none';
+          }
+
+          loadStatistics();
+      });
+
+      // Установка текущего месяца по умолчанию
+      const monthSelect = document.getElementById('monthSelect');
+      const now = new Date();
+      monthSelect.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      // Функция для загрузки данных статистики
+      function loadStatistics() {
+          const periodType = document.getElementById('periodType').value;
+          let period = periodType;
+
+          if (periodType === 'month') {
+              period = document.getElementById('monthSelect').value;
+          } else if (periodType === 'year') {
+              period = document.getElementById('yearSelect').value;
+          }
+
+          fetch(`/api/user/reading-statistics?period=${period}&type=${periodType}`)
+              .then(response => response.json())
+              .then(data => {
+                  createReadChart(data.readStats, periodType);
+                  createGenreChart(data.genreStats);
+              })
+              .catch(error => console.error('Error loading statistics:', error));
+      }
+
+      // Создание графика прочитанных книг
+      function createReadChart(readData, periodType) {
+          const ctx = document.getElementById('readChart').getContext('2d');
+
+          // Уничтожаем предыдущий график, если он существует
+          if (readChart) {
+              readChart.destroy();
+          }
+
+          const chartConfig = {
+              type: periodType === 'month' ? 'bar' : 'line',
+              data: {
+                  labels: readData.map(item => item.label),
+                  datasets: [{
+                      label: 'Прочитанные книги',
+                      data: readData.map(item => item.count),
+                      borderColor: 'rgb(75, 192, 192)',
+                      backgroundColor: periodType === 'month' ? 'rgba(75, 192, 192, 0.5)' : undefined,
+                      tension: 0.1,
+                      fill: false
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  plugins: {
+                      legend: {
+                          position: 'top',
+                      },
+                      title: {
+                          display: true,
+                          text: periodType === 'month' ? 'Количество прочитанных книг по дням' :
+                                periodType === 'year' ? 'Количество прочитанных книг по месяцам' :
+                                'Количество прочитанных книг по годам'
+                      }
+                  },
+                  scales: {
+                      y: {
+                          beginAtZero: true,
+                          ticks: {
+                              stepSize: 1
+                          }
+                      }
+                  }
+              }
+          };
+
+          readChart = new Chart(ctx, chartConfig);
+      }
+
+      // Создание графика статистики по жанрам
+      function createGenreChart(genreData) {
+          const ctx = document.getElementById('genreChart').getContext('2d');
+
+          // Уничтожаем предыдущий график, если он существует
+          if (genreChart) {
+              genreChart.destroy();
+          }
+
+          genreChart = new Chart(ctx, {
+              type: 'pie',
+              data: {
+                  labels: genreData.map(item => item.genre),
+                  datasets: [{
+                      data: genreData.map(item => item.count),
+                      backgroundColor: [
+                          'rgb(255, 99, 132)',
+                          'rgb(54, 162, 235)',
+                          'rgb(255, 206, 86)',
+                          'rgb(75, 192, 192)',
+                          'rgb(153, 102, 255)',
+                          'rgb(255, 159, 64)'
+                      ]
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  plugins: {
+                      legend: {
+                          position: 'top',
+                      },
+                      title: {
+                          display: true,
+                          text: 'Распределение книг по жанрам'
+                      }
+                  }
+              }
+          });
+      }
+
+      // Загружаем статистику при открытии вкладки
+      document.querySelector('button[data-bs-target="#statistics"]').addEventListener('click', loadStatistics);
+
+      // Загружаем статистику при изменении периода
+      document.getElementById('monthSelect').addEventListener('change', loadStatistics);
+      document.getElementById('yearSelect').addEventListener('change', loadStatistics);
+  });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+          document.addEventListener('DOMContentLoaded', function() {
+              // Делаем карточки книг кликабельными
+              document.querySelectorAll('.book-card').forEach(function(card) {
+                  card.addEventListener('click', function(e) {
+                      // Проверяем, что клик не был по форме или её элементам
+                      if (!e.target.closest('form') && !e.target.closest('select') && !e.target.closest('button')) {
+                          // Находим ссылку на книгу внутри карточки
+                          const link = this.querySelector('.card-title a');
+                          if (link) {
+                              link.click();
+                          }
+                      }
+                  });
+              });
+          });
+  </script>
+</body>
+</html>

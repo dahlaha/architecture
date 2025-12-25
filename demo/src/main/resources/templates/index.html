@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Книжный клуб</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .welcome-section {
+            background: linear-gradient(to right, #f8f9fa, #e9ecef);
+            padding: 4rem 0;
+            margin-bottom: 3rem;
+            border-radius: 10px;
+        }
+        .feature-card {
+            transition: transform 0.2s;
+            border: none;
+            border-radius: 10px;
+            background: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .feature-icon {
+            font-size: 2rem;
+            color: #0d6efd;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: header('')}"></div>
+
+    <div class="container">
+        <!-- Приветственная секция -->
+        <div class="welcome-section text-center">
+            <h1 class="display-4 mb-4">Добро пожаловать в книжный клуб!</h1>
+            <p class="lead mb-4">Откройте для себя мир книг, делитесь впечатлениями и находите единомышленников</p>
+            <div th:if="${isAuthenticated}" class="d-flex justify-content-center gap-3">
+                <a href="/books" class="btn btn-primary btn-lg">
+                    <i class="bi bi-book me-2"></i>Перейти к книгам
+                </a>
+            </div>
+            <div th:unless="${isAuthenticated}" class="d-flex justify-content-center gap-3">
+                <a href="/login" class="btn btn-outline-primary btn-lg">Вход</a>
+                <a href="/register" class="btn btn-primary btn-lg">Регистрация</a>
+            </div>
+
+        </div>
+
+        <!-- Особенности сервиса -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="feature-card p-4 h-100">
+                    <i class="bi bi-book feature-icon"></i>
+                    <h3>Ваша библиотека</h3>
+                    <p class="text-muted">Создавайте свою виртуальную библиотеку, отмечайте прочитанные книги и составляйте список желаемого</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card p-4 h-100">
+                    <i class="bi bi-chat-quote feature-icon"></i>
+                    <h3>Обсуждения</h3>
+                    <p class="text-muted">Делитесь мнениями о книгах, оставляйте отзывы и участвуйте в дискуссиях с другими читателями</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card p-4 h-100">
+                    <i class="bi bi-star feature-icon"></i>
+                    <h3>Рекомендации</h3>
+                    <p class="text-muted">Открывайте новые книги на основе ваших интересов и оценках других пользователей</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
